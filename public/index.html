@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>White Hospedagens | Painel</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fa-solid fa-server"></i> White Hospedagens
+        </div>
+        <div class="user-info">Admin <i class="fa-solid fa-circle-user"></i></div>
+    </nav>
+
+    <div class="container">
+        <header class="hero">
+            <h1>Gerencie seus Bots</h1>
+            <p>Painel de controle profissional de alta performance.</p>
+            <button class="btn-primary" onclick="openModal()">+ Novo Bot</button>
+        </header>
+
+        <div id="bot-grid" class="bot-grid">
+            </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Criar Novo Bot</h2>
+            <form id="createBotForm">
+                <div class="form-group">
+                    <label>Nome do Bot</label>
+                    <input type="text" id="botName" placeholder="Ex: MeuBotVendas" required>
+                </div>
+                <div class="form-group">
+                    <label>Token do Bot (Discord Developer Portal)</label>
+                    <input type="password" id="botToken" placeholder="MTA..." required>
+                </div>
+                <div class="form-group">
+                    <label>Código (index.js)</label>
+                    <textarea id="botCode" placeholder="client.on('ready', () => console.log('Estou on!'));" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Criar Instância</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
