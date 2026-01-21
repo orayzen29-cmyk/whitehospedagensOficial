@@ -1,22 +1,19 @@
+const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const app = express();
 
-// 1. Configura a pasta de arquivos estáticos
+app.use(express.json());
+
+// Servir arquivos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 2. Rota para carregar o Login assim que abrir o site
+// Rota principal (Login)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'auth.html'));
 });
 
-const path = require('path');
-
-// 1. Configura a pasta de arquivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
-
-// 2. Rota para carregar o Login assim que abrir o site
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'auth.html'));
-});
+// O restante das suas rotas de API (/api/login, /api/register) vem abaixo...
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -111,3 +108,4 @@ app.delete('/api/bots/:name', (req, res) => {
 
 
 app.listen(PORT, () => console.log(`🚀 White Hospedagens ON: http://localhost:${PORT}`));
+
