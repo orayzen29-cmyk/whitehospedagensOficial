@@ -3,109 +3,76 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 
+// Middleware para processar JSON e formulários
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Servir arquivos da pasta public
+// Configuração de arquivos estáticos (HTML, CSS, JS do front-end)
+// Isso resolve o erro "Not Found" ao procurar a pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota principal (Login)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'auth.html'));
-});
-
-// O restante das suas rotas de API (/api/login, /api/register) vem abaixo...
-
-const express = require('express');
-const bodyParser = require('body-parser');
-const fs = require('fs');
-const path = require('path'); // <-- Isso corrige o erro da foto!
-const { spawn } = require('child_process');
-
-const app = express();
-const PORT = 3000;
-
-app.use(express.static('public'));
-// Forçar a abertura do login ao acessar o site
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'auth.html'));
-});
-app.use(bodyParser.json());
-
-// BANCO DE DADOS DE USUÁRIOS
 const usersFile = path.join(__dirname, 'users.json');
-if (!fs.existsSync(usersFile)) fs.writeFileSync(usersFile, JSON.stringify([]));
 
-const activeProcesses = {};
+// Garante que o arquivo de usuários existe
+if (!fs.existsSync(usersFile)) {
+    fs.writeFileSync(usersFile, JSON.stringify([]));
+}
 
-// ROTA DE REGISTRO
-app.post('/api/register', (req, res) => {
-    const { user, pass } = req.body;
-    const users = JSON.parse(fs.readFileSync(usersFile));
-    if (users.find(u => u.user === user)) return res.status(400).json({ error: 'Usuário já existe' });
-    users.push({ user, pass });
-    fs.writeFileSync(usersFile, JSON.stringify(users));
-    res.json({ message: 'Registrado com sucesso' });
-});
+// --- ROTAS DE NAVEGAÇÃO ---
 
-// ROTA DE LOGIN
-app.post('/api/login', (req, res) => {
-    const { user, pass } = req.body;
-    const users = JSON.parse(fs.readFileSync(usersFile));
-    const found = users.find(u => u.user === user && u.pass === pass);
-    if (found) res.json({ success: true });
-    else res.status(401).json({ error: 'Usuário ou senha incorretos' });
-});
-
-// --- GERENCIAMENTO DE BOTS ---
-app.get('/api/bots', (req, res) => {
-    const botsDir = path.join(__dirname, 'bots');
-    if (!fs.existsSync(botsDir)) fs.mkdirSync(botsDir);
-    const bots = fs.readdirSync(botsDir).map(botName => ({
-        name: botName,
-        status: activeProcesses[botName] ? 'online' : 'offline'
-    }));
-    res.json(bots);
-});
-
-
-// FORÇAR LOGIN AO ACESSAR A RAIZ DO SITE
+// Página Inicial (Login/Registro)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'auth.html'));
 });
-app.post('/api/bots', (req, res) => {
-    const { name, token, code } = req.body;
-    const botPath = path.join(__dirname, 'bots', name);
-    if (fs.existsSync(botPath)) return res.status(400).json({ error: 'Bot já existe' });
-    fs.mkdirSync(botPath);
-    const mainCode = `const { Client, GatewayIntentBits } = require('discord.js');\nconst client = new Client({ intents: [GatewayIntentBits.Guilds] });\nconst TOKEN = "${token}";\n${code}\nclient.login(TOKEN);`;
-    fs.writeFileSync(path.join(botPath, 'index.js'), mainCode);
-    fs.writeFileSync(path.join(botPath, 'package.json'), JSON.stringify({ name, main: "index.js", dependencies: { "discord.js": "^14.11.0" } }));
-    res.json({ message: 'Bot criado' });
+
+// Painel de Controle
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/api/bots/:name/start', (req, res) => {
-    const { name } = req.params;
-    const botPath = path.join(__dirname, 'bots', name);
-    const child = spawn('node', ['index.js'], { cwd: botPath });
-    activeProcesses[name] = child;
-    child.on('close', () => delete activeProcesses[name]);
-    res.json({ status: 'online' });
+// --- ROTAS DE API (Lógica) ---
+
+// Registro de Usuário
+app.post('/api/register', (req, res) => {
+    try {
+        const { user, pass } = req.body;
+        const data = fs.readFileSync(usersFile);
+        const users = JSON.parse(data);
+
+        if (users.find(u => u.user === user)) {
+            return res.status(400).json({ error: 'Este usuário já existe!' });
+        }
+
+        users.push({ user, pass });
+        fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+        res.json({ message: 'Usuário registrado com sucesso!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro no servidor ao registrar.' });
+    }
 });
 
-app.post('/api/bots/:name/stop', (req, res) => {
-    const { name } = req.params;
-    if (activeProcesses[name]) { activeProcesses[name].kill(); delete activeProcesses[name]; }
-    res.json({ status: 'offline' });
+// Login de Usuário
+app.post('/api/login', (req, res) => {
+    try {
+        const { user, pass } = req.body;
+        const data = fs.readFileSync(usersFile);
+        const users = JSON.parse(data);
+
+        const found = users.find(u => u.user === user && u.pass === pass);
+        if (found) {
+            res.json({ success: true });
+        } else {
+            res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Erro no servidor ao logar.' });
+    }
 });
 
-app.delete('/api/bots/:name', (req, res) => {
-    const { name } = req.params;
-    if (activeProcesses[name]) { activeProcesses[name].kill(); delete activeProcesses[name]; }
-    const botPath = path.join(__dirname, 'bots', name);
-    if (fs.existsSync(botPath)) fs.rmSync(botPath, { recursive: true, force: true });
-    res.json({ message: 'Deletado' });
+// --- INICIALIZAÇÃO ---
+
+// A porta deve ser dinâmica para a Render (process.env.PORT)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 White Hospedagens rodando na porta ${PORT}`);
 });
-
-
-app.listen(PORT, () => console.log(`🚀 White Hospedagens ON: http://localhost:${PORT}`));
-
