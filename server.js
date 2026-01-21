@@ -8,6 +8,16 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'auth.html'));
 });
 
+const path = require('path');
+
+// 1. Configura a pasta de arquivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 2. Rota para carregar o Login assim que abrir o site
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'auth.html'));
+});
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -98,5 +108,6 @@ app.delete('/api/bots/:name', (req, res) => {
     if (fs.existsSync(botPath)) fs.rmSync(botPath, { recursive: true, force: true });
     res.json({ message: 'Deletado' });
 });
+
 
 app.listen(PORT, () => console.log(`🚀 White Hospedagens ON: http://localhost:${PORT}`));
